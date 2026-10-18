@@ -1,4 +1,4 @@
-"""Person B: resumable single-primary-key batch copy."""
+"""Person B: resumable single-primary-key batch copy and event replay."""
 import json
 from uuid import UUID
 
@@ -14,20 +14,16 @@ DEFAULT_BATCH_SIZE = 1000
 def copy_batch(connection, migration_id, batch_size=DEFAULT_BATCH_SIZE):
     if not 1 <= batch_size <= 10000:
         raise ValueError("Batch size must be from 1 to 10000.")
-
     row = get_migration(connection, migration_id, lock=True)
     schema, source_name, shadow_name, _old, columns, keys, last_key, copied, done, status = row
-
     if status not in ("READY_FOR_COPY", "COPYING"):
         if done:
             return {"copied_this_batch": 0, "copied_total": copied, "copy_complete": True}
         raise ValueError(f"Cannot copy rows when status is {status}.")
-
     key = keys[0]
     source = sql.Identifier(schema, source_name)
     shadow = sql.Identifier(schema, shadow_name)
     collist = sql.SQL(", ").join(map(sql.Identifier, columns))
-
     if last_key is None:
         query = load_sql("copy_api.sql", "select_first_batch").format(
             columns=collist, source=source, key=sql.Identifier(key))
@@ -36,7 +32,6 @@ def copy_batch(connection, migration_id, batch_size=DEFAULT_BATCH_SIZE):
         query = load_sql("copy_api.sql", "select_after_key").format(
             columns=collist, source=source, key=sql.Identifier(key))
         params = (Jsonb({key: last_key["value"]}), batch_size)
-
     with connection.cursor() as cur:
         cur.execute(query, params)
         batch = cur.fetchall()
@@ -67,10 +62,12 @@ def _typed_key(schema, table, key, value):
 
 
 def _apply_event(connection, migration, direction, old_row, new_row):
-    schema, source_name, shadow_name, _old, columns, keys = migration[:6]
+    schema, source_name, shadow_name, old_table, columns, keys = migration[:6]
     key = keys[0]
-    target_name = shadow_name
-    
+    target_name = shadow_name if direction == "FORWARD" else old_table
+    if not target_name:
+        raise ValueError("The rollback target table is not set.")
+    # Keep the new column's value on ordinary updates; delete only removed/renamed keys.
     delete_old = old_row is not None and (new_row is None or old_row.get(key) != new_row.get(key))
     with connection.cursor() as cur:
         if delete_old and old_row.get(key) is not None:
@@ -100,6 +97,8 @@ def _apply_event(connection, migration, direction, old_row, new_row):
 
 
 def catch_up(connection, migration_id, direction="FORWARD", batch_size=500):
+    if direction not in ("FORWARD", "REVERSE"):
+        raise ValueError("direction must be FORWARD or REVERSE")
     mid = UUID(str(migration_id))
     total = 0
     while True:
