@@ -50,8 +50,9 @@ def prepare_migration(connection, request, plan, allow_risky=False):
         cur.execute(load_sql("prepare_api.sql", "add_requested_column").format(
             shadow=shadow, column_definition=coldef))
         cur.execute(load_sql("prepare_api.sql", "create_capture_trigger").format(
-            trigger_name=sql.Identifier(trigger_name), source=source, meta=META),
-            (str(migration_id), "FORWARD"))
+            trigger_name=sql.Identifier(trigger_name), source=source, meta=META,
+            migration_id=sql.Literal(str(migration_id)),
+            direction=sql.Literal("FORWARD")))
         info = fresh["inspection"]
         cur.execute(load_sql("prepare_api.sql", "insert_migration").format(meta=META), (
             migration_id, request.schema, request.table, shadow_name, request.column,

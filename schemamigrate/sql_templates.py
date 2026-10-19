@@ -34,10 +34,10 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                          '$function$'},
  'catchup_api.sql': {'delete_target_key': 'DELETE FROM {target} WHERE {key} = {typed_key}',
                      'find_current_row': 'SELECT {columns} FROM {source}\n'
-                                         'WHERE {key} = (jsonb_populate_record(NULL::{source}, '
-                                         '%s::jsonb)).{key}',
+                                        'WHERE {key} = (jsonb_populate_record(NULL::{source}, '
+                                        '%s::jsonb)).{key}',
                      'mark_event_processed': 'UPDATE {meta}.change_events SET processed = true '
-                                             'WHERE event_id = %s',
+                                            'WHERE event_id = %s',
                      'pending_events': 'SELECT event_id, old_row, new_row\n'
                                        'FROM {meta}.change_events\n'
                                        'WHERE migration_id = %s AND direction = %s AND processed = '
@@ -62,7 +62,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
  'cutover_api.sql': {'create_reverse_trigger': 'CREATE TRIGGER {trigger_name} AFTER INSERT OR '
                                                'UPDATE OR DELETE ON {table}\n'
                                                'FOR EACH ROW EXECUTE FUNCTION '
-                                               "{meta}.capture_change(%s, 'REVERSE')",
+                                               '{meta}.capture_change({migration_id}, {direction})',
                      'drop_trigger': 'DROP TRIGGER {trigger_name} ON {table}',
                      'lock_table': 'LOCK TABLE {table} IN ACCESS EXCLUSIVE MODE',
                      'mark_rolled_back': "UPDATE {meta}.migrations SET status = 'ROLLED_BACK' "
@@ -86,7 +86,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                      'create_capture_trigger': 'CREATE TRIGGER {trigger_name} AFTER INSERT OR '
                                                'UPDATE OR DELETE ON {source}\n'
                                                'FOR EACH ROW EXECUTE FUNCTION '
-                                               '{meta}.capture_change(%s, %s)',
+                                               '{meta}.capture_change({migration_id}, {direction})',
                      'create_shadow': 'CREATE TABLE {shadow} (LIKE {source} INCLUDING ALL)',
                      'insert_migration': 'INSERT INTO {meta}.migrations (\n'
                                          '    migration_id, source_schema, source_table, '
