@@ -54,7 +54,7 @@ def main():
         copied_this_run = 0
         while True:
             result = copy_batch(connection, migration_id, args.batch_size)
-            # Commit each batch so completed work remains resumable after an error.
+            
             connection.commit()
             copied_this_run += result["copied_this_batch"]
             print(
