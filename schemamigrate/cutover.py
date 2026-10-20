@@ -41,3 +41,25 @@ def cutover(connection, migration_id):
             migration_id=sql.Literal(str(mid)), direction=sql.Literal("REVERSE")))
         cur.execute(load_sql("cutover_api.sql", "mark_swapped").format(meta=META), (old, mid))
     return {"migration_id": str(mid), "status": "SWAPPED", "old_table": f"{schema}.{old}"}
+
+
+def rollback(connection, migration_id):
+    mid = UUID(str(migration_id))
+    row = get_migration(connection, mid, lock=True)
+    schema, source, shadow, old, columns, _keys, _last, _copied, _done, status = row
+    if status != "SWAPPED" or not old:
+        raise ValueError("Only a swapped migration can be rolled back.")
+    reverse = f"sm_reverse_{mid.hex[:12]}"
+    _lock(connection, schema, (source, old))
+    catch_up(connection, mid, "REVERSE")
+    if not compare_tables(connection, schema, source, old, columns):
+        raise ValueError("Locked rollback comparison failed; table names were not changed.")
+    with connection.cursor() as cur:
+        cur.execute(load_sql("cutover_api.sql", "drop_trigger").format(
+            trigger_name=sql.Identifier(reverse), table=sql.Identifier(schema, source)))
+        cur.execute(load_sql("cutover_api.sql", "rename_table").format(
+            table=sql.Identifier(schema, source), new_name=sql.Identifier(shadow)))
+        cur.execute(load_sql("cutover_api.sql", "rename_table").format(
+            table=sql.Identifier(schema, old), new_name=sql.Identifier(source)))
+        cur.execute(load_sql("cutover_api.sql", "mark_rolled_back").format(meta=META), (mid,))
+    return {"migration_id": str(mid), "status": "ROLLED_BACK", "live_table": f"{schema}.{source}"}
