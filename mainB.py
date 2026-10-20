@@ -32,9 +32,7 @@ def main():
 
     if not args.dsn:
         parser.error("Set SCHEMAMIGRATE_DSN or pass --dsn.")
-
     migration_id = args.migration_id or input("Enter migration UUID from mainA.py: ").strip()
-
     if not 1 <= args.batch_size <= 10000:
         parser.error("--batch-size must be between 1 and 10000.")
 
@@ -54,7 +52,7 @@ def main():
         copied_this_run = 0
         while True:
             result = copy_batch(connection, migration_id, args.batch_size)
-            
+            # Commit each batch so completed work remains resumable after an error.
             connection.commit()
             copied_this_run += result["copied_this_batch"]
             print(
