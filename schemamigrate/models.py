@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-# dataclass helps code make a bit clean a bit short,  
+# dataclass helps code make a bit clean a bit short,
 # frozen=True: Makes the class immutable. Any attempt to modify a field raises a FrozenInstanceError, & it generates a __hash__ method so the instance can be used as a dictionary key or in a set
 @dataclass(frozen=True)
 class MigrationRequest:

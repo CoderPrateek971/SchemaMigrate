@@ -18,4 +18,3 @@ schemamigrate = "schemamigrate.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["schemamigrate*"]
-
