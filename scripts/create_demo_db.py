@@ -1,4 +1,4 @@
-"""Create/reset the isolated demo database with exactly 1,000 demo rows."""
+"""Person B (Prateek): Create/reset the isolated demo database with configurable demo rows."""
 import argparse
 import os
 
@@ -10,30 +10,29 @@ from schemamigrate.database import prompt_for_password
 
 DEMO_DATABASE = "schemamigrate_demo"
 
-# These statements are scoped to the dedicated demo database. Each setup run
-# recreates only the schemas owned by this project and inserts 1,000 sample rows.
-DEMO_SETUP = (
-    "DROP SCHEMA IF EXISTS schemamigrate_demo CASCADE",
-    "DROP SCHEMA IF EXISTS schemamigrate_meta_v1 CASCADE",
-    "CREATE SCHEMA schemamigrate_demo",
-    """
-    CREATE TABLE schemamigrate_demo.customers (
-        id integer PRIMARY KEY,
-        full_name text NOT NULL,
-        email text NOT NULL UNIQUE,
-        created_at timestamptz NOT NULL
+def build_setup_statements(row_count: int):
+    return (
+        "DROP SCHEMA IF EXISTS schemamigrate_demo CASCADE",
+        "DROP SCHEMA IF EXISTS schemamigrate_meta_v1 CASCADE",
+        "CREATE SCHEMA schemamigrate_demo",
+        """
+        CREATE TABLE schemamigrate_demo.customers (
+            id integer PRIMARY KEY,
+            full_name text NOT NULL,
+            email text NOT NULL UNIQUE,
+            created_at timestamptz NOT NULL
+        )
+        """,
+        f"""
+        INSERT INTO schemamigrate_demo.customers (id, full_name, email, created_at)
+        SELECT id,
+               'Customer ' || id,
+               'customer' || id || '@example.test',
+               timestamptz '2025-01-01 00:00:00+00' + (id * interval '1 minute')
+        FROM generate_series(1, {row_count}) AS id
+        """,
+        "ANALYZE schemamigrate_demo.customers",
     )
-    """,
-    """
-    INSERT INTO schemamigrate_demo.customers (id, full_name, email, created_at)
-    SELECT id,
-           'Customer ' || id,
-           'customer' || id || '@example.test',
-           timestamptz '2025-01-01 00:00:00+00' + (id * interval '1 minute')
-    FROM generate_series(1, 1000) AS id
-    """,
-    "ANALYZE schemamigrate_demo.customers",
-)
 
 
 def main():
@@ -42,6 +41,12 @@ def main():
         "--admin-dsn",
         default=os.getenv("SCHEMAMIGRATE_ADMIN_DSN"),
         help="Admin connection to a maintenance database; or set SCHEMAMIGRATE_ADMIN_DSN",
+    )
+    parser.add_argument(
+        "--rows",
+        type=int,
+        default=1000,
+        help="Number of demo customer rows to generate (default: 1000; e.g. 10000, 100000).",
     )
     args = parser.parse_args()
     if not args.admin_dsn:
@@ -73,9 +78,10 @@ def main():
                 print(f"Using existing dedicated database {DEMO_DATABASE}.")
 
     demo_dsn = make_conninfo(admin_dsn, dbname=DEMO_DATABASE)
+    setup_statements = build_setup_statements(args.rows)
     with psycopg.connect(demo_dsn) as connection:
         with connection.cursor() as cursor:
-            for statement in DEMO_SETUP:
+            for statement in setup_statements:
                 cursor.execute(statement)
             cursor.execute("SELECT count(*) FROM schemamigrate_demo.customers")
             row_count = cursor.fetchone()[0]
@@ -89,13 +95,13 @@ def main():
             )
             column_count = cursor.fetchone()[0]
 
-    if row_count != 1000 or column_count != 4:
+    if row_count != args.rows or column_count != 4:
         raise RuntimeError(
-            "Demo setup check failed: expected 1,000 rows and 4 columns, "
-            f"got {row_count} rows and {column_count} columns."
+            f"Demo setup check failed: expected {args.rows:,} rows and 4 columns, "
+            f"got {row_count:,} rows and {column_count} columns."
         )
 
-    print(f"Demo table ready: {row_count} rows, {column_count} columns.")
+    print(f"Demo table ready: {row_count:,} rows, {column_count} columns.")
     print(
         "Set SCHEMAMIGRATE_DSN to the same connection with "
         f"dbname={DEMO_DATABASE}."

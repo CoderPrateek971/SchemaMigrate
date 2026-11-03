@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import time
 
 from schemamigrate.copy_engine import catch_up, copy_batch
 from schemamigrate.cutover import cutover, rollback
@@ -43,6 +44,7 @@ def build_parser():
     cp.add_argument("migration_id")
     cp.add_argument("--batch-size", type=int, default=1000)
     cp.add_argument("--all", action="store_true")
+    cp.add_argument("--throttle", type=float, default=0.0, help="Pause in seconds between batches (e.g. 0.05)")
     catch = commands.add_parser("catch-up", help="Replay captured writes")
     catch.add_argument("migration_id")
     catch.add_argument("--direction", choices=("FORWARD", "REVERSE"), default="FORWARD")
@@ -95,6 +97,8 @@ def main(argv=None):
                 result["copied_this_run"] = this_run
                 _json(result)
                 return
+            if args.throttle > 0:
+                time.sleep(args.throttle)
     with connect(dsn) as conn:
         if args.command == "catch-up":
             _json({"events_applied": catch_up(conn, args.migration_id, args.direction)})
