@@ -32,6 +32,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                          '    END IF;\n'
                                          'END;\n'
                                          '$function$'},
+
  'catchup_api.sql': {'delete_target_key': 'DELETE FROM {target} WHERE {key} = {typed_key}',
                      'find_current_row': 'SELECT {columns} FROM {source}\n'
                                         'WHERE {key} = (jsonb_populate_record(NULL::{source}, '
@@ -45,6 +46,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                        'ORDER BY event_id LIMIT %s FOR UPDATE SKIP LOCKED',
                      'upsert_current_row': 'INSERT INTO {target} ({columns}) VALUES ({values})\n'
                                            'ON CONFLICT ({key}) {conflict_action}'},
+
  'copy_api.sql': {'copy_complete': 'UPDATE {meta}.migrations SET copy_complete = true, status = '
                                    "'COPY_READY'\n"
                                    'WHERE migration_id = %s',
@@ -59,6 +61,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                       '%s::jsonb)).{key}\n'
                                       'ORDER BY {key} LIMIT %s',
                   'select_first_batch': 'SELECT {columns} FROM {source} ORDER BY {key} LIMIT %s'},
+
  'cutover_api.sql': {'create_reverse_trigger': 'CREATE TRIGGER {trigger_name} AFTER INSERT OR '
                                                'UPDATE OR DELETE ON {table}\n'
                                                'FOR EACH ROW EXECUTE FUNCTION '
@@ -71,6 +74,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                      "'SWAPPED', swapped_at = now()\n"
                                      'WHERE migration_id = %s',
                      'rename_table': 'ALTER TABLE {table} RENAME TO {new_name}'},
+
  'lifecycle_api.sql': {'abort_get': 'SELECT source_schema, source_table, shadow_table, status\n'
                                     'FROM {meta}.migrations WHERE migration_id = %s FOR UPDATE',
                        'drop_table': 'DROP TABLE {table}',
@@ -102,7 +106,7 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                                 '  WHERE table_schema = %s AND table_name = %s AND '
                                                 'column_name = %s\n'
                                                 ')'},
- 'state_api.sql': {'create_events': 'CREATE TABLE IF NOT EXISTS {meta}.change_events (\n'
+                    'state_api.sql': {'create_events': 'CREATE TABLE IF NOT EXISTS {meta}.change_events (\n'
                                     '    event_id bigserial PRIMARY KEY,\n'
                                     '    migration_id uuid NOT NULL,\n'
                                     "    direction text NOT NULL DEFAULT 'FORWARD',\n"
@@ -162,7 +166,10 @@ SQL_TEMPLATES = {'capture_api.sql': {'capture_function': 'CREATE OR REPLACE FUNC
                                        'FROM {meta}.migrations WHERE migration_id = %s',
                    'save_handoff': 'UPDATE {meta}.migrations SET handoff = %s WHERE migration_id = '
                                    '%s'},
- 'verify_api.sql': {'row_count': 'SELECT count(*) FROM {table}',
+ 'verify_api.sql': {'checksum': 'SELECT coalesce(md5(string_agg(md5(t::text), \'\' ORDER BY {key})), \'empty\') FROM (SELECT {columns} FROM {table} ORDER BY {key}) t',
+                    'constraint_count': 'SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid = %s::regclass',
+                    'index_count': 'SELECT count(*) FROM pg_catalog.pg_indexes WHERE schemaname = %s AND tablename = %s',
+                    'row_count': 'SELECT count(*) FROM {table}',
                     'rows_differ': 'SELECT EXISTS (\n'
                                    '    (SELECT {columns} FROM {left_table} EXCEPT ALL SELECT '
                                    '{columns} FROM {right_table})\n'
