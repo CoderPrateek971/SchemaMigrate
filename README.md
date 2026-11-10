@@ -423,6 +423,12 @@ SchemaMigrate/
 ├── mainB.py                            # Person B entry point: batch copy -> throttle -> % progress -> verify
 ├── mainC.py                            # Person C entry point: locked cutover -> rollback / finalize
 │
+├── docs/                               # Project documentation assets & specifications
+│   ├── assets/                         # Architecture diagrams and work division images
+│   │   └── work_division.jpg
+│   └── specifications/                 # Course project brief and requirements PDF
+│       └── PROJECT 5_ SchemaMigrate_Professor.pdf
+│
 ├── schemamigrate/                      # Core migration engine package
 │   ├── __init__.py                     # Package initialization
 │   ├── cli.py                          # Subcommand CLI parser and execution handlers
