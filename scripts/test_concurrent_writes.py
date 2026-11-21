@@ -11,7 +11,7 @@ from psycopg import sql
 
 from schemamigrate.copy_engine import catch_up, copy_batch
 from schemamigrate.cutover import cutover, rollback
-from schemamigrate.database import connect, inspect_request
+from schemamigrate.database import connect, inspect_request, prompt_for_password
 from schemamigrate.parser.request_parser import from_sql
 from schemamigrate.planner import build_plan
 from schemamigrate.prepare import prepare_migration
@@ -58,6 +58,8 @@ def main():
     if not dsn:
         print("Error: Set SCHEMAMIGRATE_DSN environment variable.")
         sys.exit(1)
+
+    dsn = prompt_for_password(dsn)
 
     print("=== TEST: CONCURRENT WRITES & ZERO-DOWNTIME MIGRATION ===")
 
