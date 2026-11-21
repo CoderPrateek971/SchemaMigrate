@@ -124,7 +124,26 @@ Type `ROLLBACK`. It replays reverse events, compares the original columns, then 
 
 Before cutover, `python main.py abort MIGRATION_UUID` removes a prepared shadow and trigger; type `ABORT`. Do not use `abort` after a swap.
 
-## 6. Run local checks
+## 6. Web Dashboard: Real-Time Browser Console
+
+To run and monitor migrations with a graphical user interface in the browser:
+
+```sh
+python mainWeb.py
+# or: python main.py dashboard --port 8080
+```
+
+Open `http://127.0.0.1:8080` in your web browser.
+
+Features:
+- **Live Progress Tracking:** Visual percentage bar, current rows copied, and stage visualizer.
+- **Server-Sent Events (SSE):** Streaming log updates and progress changes pushed in real time.
+- **Pause & Resume Controls:** Click **Pause** to freeze copying between batches; click **Resume** to restart from the cursor.
+- **Cancel Migration:** Click **Cancel** before cutover to trigger cleanup and abort safely.
+- **Cutover & Rollback:** Execute atomic swap, view verification results, roll back if needed, or finalize.
+- **Demo Mode:** Start an instant simulation migration directly from the UI without requiring an active PostgreSQL database.
+
+## 7. Run local checks
 
 ```sh
 python -m unittest discover -s tests -v

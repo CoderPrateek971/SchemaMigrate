@@ -159,6 +159,23 @@ python mainC.py c27c6225-83e7-4007-8e68-07759a9db75d
   - **Type `ROLLBACK` (then confirm `ROLLBACK`):** Restores the old table immediately.
   - **⚠️ ️Type `FINALIZE` (then confirm `FINALIZE`):** Permanently drops `sm_old_*`. **This action is irreversible and ends rollback availability.**
 
+#### 4. Web Dashboard — Real-Time Browser UI
+
+Instead of using only the command line, you can observe progress and execute migration operations directly from your browser:
+
+```bash
+python mainWeb.py
+# or: python main.py dashboard --port 8080
+```
+Open **`http://127.0.0.1:8080`** in your browser.
+
+* **Real-Time Visual Progress:** Live animated progress bar (% complete, rows copied vs estimated rows, phase stepper).
+* **Server-Sent Events (SSE):** Streams batch progress, event replay, and status changes in real time with zero external dependencies.
+* **Pause & Resume:** Pause keyset batch copying from the web UI. Progress is durably committed to PostgreSQL so copying resumes seamlessly from the cursor.
+* **Cancel from Web UI:** Cancel/abort an active or prepared migration with one click; automatically drops the shadow table and cleans up triggers.
+* **Interactive Cutover & Rollback:** Perform locked cutover, inspect post-swap column verification, trigger reverse-capture rollback, or finalize.
+* **Instant Demo Mode:** Run and test the complete workflow (pause, resume, cancel, cutover, rollback) directly in the browser even without an active PostgreSQL connection.
+
 ---
 
 ## 3. Architecture and Migration Lifecycle
@@ -284,6 +301,7 @@ python main.py abort <UUID>
 | [`mainA.py`](mainA.py) | **Person A (Saksham)** | Orchestrates parse $\rightarrow$ inspect $\rightarrow$ plan $\rightarrow$ prompt $\rightarrow$ prepare $\rightarrow$ handoff serialization. |
 | [`mainB.py`](mainB.py) | **Person B (Prateek)** | Reads handoff $\rightarrow$ executes throttled batch copy $\rightarrow$ tracks `% complete` $\rightarrow$ catches up CDC $\rightarrow$ verifies. |
 | [`mainC.py`](mainC.py) | **Person C (Nishtha)** | Performs locked cutover $\rightarrow$ post-cutover check $\rightarrow$ prompts for `KEEP`, `ROLLBACK`, or `FINALIZE`. |
+| [`mainWeb.py`](mainWeb.py) | **Web Dashboard (All)** | Full real-time browser dashboard with SSE streaming, live progress bar, pause/resume, cancel, cutover, and rollback. |
 
 ### Environment Variables & Configuration
 
@@ -422,6 +440,7 @@ SchemaMigrate/
 ├── mainA.py                            # Person A entry point: parse -> inspect -> plan -> prepare -> handoff
 ├── mainB.py                            # Person B entry point: batch copy -> throttle -> % progress -> verify
 ├── mainC.py                            # Person C entry point: locked cutover -> rollback / finalize
+├── mainWeb.py                          # Web Dashboard entry point: real-time browser UI, pause/cancel, SSE
 │
 ├── docs/                               # Project documentation assets & specifications
 │   ├── assets/                         # Architecture diagrams and work division images
@@ -444,6 +463,10 @@ SchemaMigrate/
 │   ├── lifecycle.py                    # Cleanup handlers: pre-cutover abort and post-cutover finalization
 │   ├── sql_resources.py                # SQL query loader and parameterizer
 │   ├── sql_templates.py                # Centralized dictionary of raw PostgreSQL queries and PL/pgSQL
+│   ├── web/                            # Web Dashboard package: HTTP server, SSE stream, and UI
+│   │   ├── runner.py                   # Background runner with pause, resume, cancel, and SSE broadcast
+│   │   ├── server.py                   # Threading HTTP server with REST and SSE endpoints
+│   │   └── static/index.html           # Real-time single-page web dashboard interface
 │   └── parser/
 │       ├── __init__.py                 # Parser subpackage
 │       └── request_parser.py           # SQL AST parser enforcing supported ALTER TABLE ADD COLUMN syntax

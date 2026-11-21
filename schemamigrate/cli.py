@@ -59,11 +59,19 @@ def build_parser():
     ):
         sub = commands.add_parser(name, help=help_text)
         sub.add_argument("migration_id")
+    dash = commands.add_parser("dashboard", help="Start the real-time Web Dashboard")
+    dash.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
+    dash.add_argument("--port", type=int, default=8080, help="Port to listen on (default: 8080)")
     return parser
 
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    if args.command == "dashboard":
+        from schemamigrate.web.server import start_server
+        dsn = args.dsn or os.getenv("SCHEMAMIGRATE_DSN")
+        start_server(host=args.host, port=args.port, dsn=dsn)
+        return
     dsn = _dsn(args)
     if args.command in ("plan", "prepare"):
         request = from_sql(args.sql)

@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SchemaMigrate — Real-Time Web Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0b0f19;
+      --bg-surface: #111827;
+      --bg-surface-elevated: #1f2937;
+      --border-subtle: #1e293b;
+      --border-accent: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.3);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.3);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.3);
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+      --radius: 14px;
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+      --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+      padding: 24px;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.12), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.08), transparent 50%);
+    }
+
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand h1 span {
+      background: linear-gradient(90deg, #60a5fa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.6);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success-glow);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Workflow Stage Stepper */
+    .stepper-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      position: relative;
+    }
+
+    .step-node {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .step-node.active {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: var(--primary);
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .step-node.completed {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .step-node.active .step-badge {
+      color: #60a5fa;
+    }
+
+    .step-node.completed .step-badge {
+      color: var(--success);
+    }
+
+    .step-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .step-owner {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Main Progress Hero Card */
+    .hero-progress {
+      background: linear-gradient(180deg, #161f30 0%, #111827 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .progress-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .status-badge-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-badge.COPYING {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: var(--primary);
+      color: #60a5fa;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .status-badge.PAUSED {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--warning);
+      color: #fbbf24;
+      box-shadow: 0 0 15px var(--warning-glow);
+    }
+
+    .status-badge.COPY_READY {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: var(--purple);
+      color: #c084fc;
+    }
+
+    .status-badge.SWAPPED {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--success);
+      color: #34d399;
+      box-shadow: 0 0 15px var(--success-glow);
+    }
+
+    .status-badge.ROLLED_BACK {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: #f43f5e;
+      color: #fda4af;
+    }
+
+    .status-badge.ABORTED {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--danger);
+      color: #f87171;
+    }
+
+    .status-badge.FINALIZED {
+      background: rgba(100, 116, 139, 0.2);
+      border-color: #64748b;
+      color: #cbd5e1;
+    }
+
+    .progress-stats-row {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    .progress-number {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-family: 'JetBrains Mono', monospace;
+      color: white;
+    }
+
+    .progress-rows {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .progress-bar-wrap {
+      width: 100%;
+      height: 18px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+      border-radius: 10px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .progress-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+      animation: shimmer 2s infinite linear;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* Controls Bar */
+    .controls-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      filter: grayscale(0.8);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      box-shadow: 0 0 14px var(--primary-glow);
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: #000;
+    }
+    .btn-warning:hover:not(:disabled) {
+      background: #d97706;
+      box-shadow: 0 0 14px var(--warning-glow);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: var(--danger);
+      color: white;
+      box-shadow: 0 0 14px var(--danger-glow);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #059669;
+      box-shadow: 0 0 14px var(--success-glow);
+    }
+
+    .btn-purple {
+      background: var(--purple);
+      color: white;
+    }
+    .btn-purple:hover:not(:disabled) {
+      background: #7c3aed;
+      box-shadow: 0 0 14px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border-accent);
+      color: var(--text-main);
+    }
+    .btn-outline:hover:not(:disabled) {
+      background: var(--bg-surface-elevated);
+      border-color: var(--text-muted);
+    }
+
+    .slider-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.5);
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .slider-control input[type="range"] {
+      width: 90px;
+      accent-color: var(--primary);
+    }
+
+    /* Grid Layout for details & console */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      .stepper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .info-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .info-val {
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    /* Real-Time Terminal / Console */
+    .terminal-card {
+      background: #070a13;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      height: 480px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .terminal-header {
+      background: #0f172a;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .terminal-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .terminal-logs {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      word-break: break-all;
+    }
+
+    .log-ts {
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .log-msg {
+      color: #e2e8f0;
+    }
+    .log-msg.success { color: #34d399; }
+    .log-msg.warn { color: #fbbf24; }
+    .log-msg.error { color: #f87171; }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 540px;
+      padding: 28px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-input {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: white;
+      width: 100%;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1>Schema<span>Migrate</span></h1>
+          <p style="font-size: 12px; color: var(--text-dim);">Real-Time PostgreSQL Migration Console</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="live-indicator">
+          <div class="live-dot" id="live-dot"></div>
+          <span id="connection-status">Connecting to SSE...</span>
+        </div>
+        <button class="btn-outline" onclick="openNewModal()">+ New Migration</button>
+      </div>
+    </header>
+
+    <!-- Stepper -->
+    <div class="stepper-card">
+      <div class="stepper">
+        <div class="step-node" id="step-1">
+          <span class="step-badge">Phase 1</span>
+          <span class="step-title">Plan & Prepare</span>
+          <span class="step-owner">Person A • Shadow & Forward Trigger</span>
+        </div>
+        <div class="step-node" id="step-2">
+          <span class="step-badge">Phase 2</span>
+          <span class="step-title">Batch Backfill</span>
+          <span class="step-owner">Person B • Keyset Batches</span>
+        </div>
+        <div class="step-node" id="step-3">
+          <span class="step-badge">Phase 3</span>
+          <span class="step-title">Catch-up & Verify</span>
+          <span class="step-owner">Person B • Count & Row Equality</span>
+        </div>
+        <div class="step-node" id="step-4">
+          <span class="step-badge">Phase 4</span>
+          <span class="step-title">Locked Cutover</span>
+          <span class="step-owner">Person C • Table Swap</span>
+        </div>
+        <div class="step-node" id="step-5">
+          <span class="step-badge">Phase 5</span>
+          <span class="step-title">Rollback / Finalize</span>
+          <span class="step-owner">Person C • Safety Window</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Progress & Controls -->
+    <div class="hero-progress">
+      <div class="progress-top-row">
+        <div class="status-badge-container">
+          <div class="status-badge" id="status-pill">INITIALIZING</div>
+          <span id="sub-status-text" style="color: var(--text-muted); font-size: 13px;">Preparing status...</span>
+        </div>
+        <div class="progress-stats-row">
+          <div class="progress-number" id="percent-display">0.0%</div>
+          <div class="progress-rows" id="rows-display">0 / 1,000 rows</div>
+        </div>
+      </div>
+
+      <!-- Animated Progress Bar -->
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+
+      <!-- Live Controls Toolbar -->
+      <div class="controls-toolbar">
+        <div class="btn-group">
+          <!-- Pause button (Amber) -->
+          <button class="btn-warning" id="btn-pause" onclick="pauseCopy()" disabled>
+            <span>⏸</span> Pause
+          </button>
+          <!-- Resume button (Blue) -->
+          <button class="btn-primary" id="btn-resume" onclick="resumeCopy()" disabled>
+            <span>▶</span> Resume
+          </button>
+          <!-- Cancel button (Red) -->
+          <button class="btn-danger" id="btn-cancel" onclick="confirmCancel()" disabled>
+            <span>✕</span> Cancel Migration
+          </button>
+          <!-- Start Copy (Green) -->
+          <button class="btn-success" id="btn-start" onclick="startCopy()" disabled>
+            <span>🚀</span> Start Copy
+          </button>
+          <!-- Cutover (Emerald) -->
+          <button class="btn-success" id="btn-cutover" onclick="confirmCutover()" disabled>
+            <span>🔀</span> Cutover (Swap)
+          </button>
+          <!-- Rollback (Rose) -->
+          <button class="btn-danger" id="btn-rollback" onclick="confirmRollback()" disabled>
+            <span>⏪</span> Rollback
+          </button>
+          <!-- Finalize (Slate) -->
+          <button class="btn-outline" id="btn-finalize" onclick="finalizeMigration()" disabled>
+            <span>✓</span> Finalize
+          </button>
+        </div>
+
+        <!-- Controls: Throttle & Batch size -->
+        <div class="btn-group">
+          <div class="slider-control">
+            <span>Throttle:</span>
+            <input type="range" id="throttle-range" min="0" max="1" step="0.1" value="0.3" onchange="updateThrottle(this.value)">
+            <span id="throttle-val">0.3s</span>
+          </div>
+          <div class="slider-control">
+            <span>Batch:</span>
+            <input type="range" id="batch-range" min="100" max="2000" step="100" value="250" onchange="updateBatch(this.value)">
+            <span id="batch-val">250</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Grid & Console -->
+    <div class="dashboard-grid">
+      <!-- Left Column: Migration Metadata & Verification -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="card">
+          <div class="card-title">
+            <span>Migration Details</span>
+            <span id="demo-indicator" style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(59,130,246,0.1); color: #60a5fa;">ACTIVE</span>
+          </div>
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-label">Migration UUID</span>
+              <span class="info-val" id="val-uuid">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Live Source Table</span>
+              <span class="info-val" id="val-source">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Shadow Table</span>
+              <span class="info-val" id="val-shadow">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Requested Column</span>
+              <span class="info-val" id="val-column" style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Events Caught Up</span>
+              <span class="info-val" id="val-events">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Verification Status</span>
+            <span id="verif-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(148,163,184,0.1); color: #94a3b8;">PENDING</span>
+          </div>
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-label">Row Counts Match</span>
+              <span class="info-val" id="val-row-match">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Column Data Equality</span>
+              <span class="info-val" id="val-col-match">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Safety Pre-Check</span>
+              <span class="info-val" id="val-safety">Verified before Swap</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Real-Time Console Feed -->
+      <div class="terminal-card">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <div class="terminal-dot dot-red"></div>
+            <div class="terminal-dot dot-yellow"></div>
+            <div class="terminal-dot dot-green"></div>
+          </div>
+          <div class="terminal-title">
+            <span>⚡ Real-Time Migration Stream</span>
+          </div>
+          <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="terminal-logs" id="terminal-logs">
+          <!-- Logs stream here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Migration Modal -->
+  <div class="modal-backdrop" id="new-modal">
+    <div class="modal">
+      <div class="modal-title">Start New Schema Migration</div>
+      <div class="form-group">
+        <label class="form-label">SQL ALTER TABLE Statement</label>
+        <input type="text" class="form-input" id="modal-sql" value="ALTER TABLE schemamigrate_demo.customers ADD COLUMN loyalty_level integer DEFAULT 1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">PostgreSQL DSN (Leave blank for instant simulation demo)</label>
+        <input type="text" class="form-input" id="modal-dsn" placeholder="postgresql://postgres@localhost:5432/schemamigrate_demo">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline" onclick="closeNewModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitPrepare()">Prepare Migration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Client Logic & Native SSE -->
+  <script>
+    let currentSession = {};
+    let eventSource = null;
+
+    // Connect to Server-Sent Events (SSE)
+    function connectSSE() {
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      const statusText = document.getElementById("connection-status");
+      const dot = document.getElementById("live-dot");
+
+      eventSource = new EventSource("/api/stream");
+
+      eventSource.onopen = () => {
+        statusText.innerText = "Real-Time SSE Connected";
+        dot.style.background = "var(--success)";
+      };
+
+      eventSource.addEventListener("init", (e) => {
+        const data = JSON.parse(e.data);
+        updateUI(data);
+        if (data.logs) {
+          renderLogs(data.logs);
+        }
+      });
+
+      eventSource.addEventListener("progress", (e) => {
+        const data = JSON.parse(e.data);
+        updateUI(data);
+      });
+
+      eventSource.addEventListener("state_change", (e) => {
+        const data = JSON.parse(e.data);
+        updateUI(data);
+      });
+
+      eventSource.addEventListener("log", (e) => {
+        const entry = JSON.parse(e.data);
+        appendLog(entry);
+      });
+
+      eventSource.onerror = () => {
+        statusText.innerText = "Reconnecting...";
+        dot.style.background = "var(--warning)";
+      };
+    }
+
+    function updateUI(s) {
+      currentSession = s;
+
+      // Status Pill
+      const pill = document.getElementById("status-pill");
+      pill.innerText = s.status || "IDLE";
+      pill.className = "status-badge " + (s.status || "IDLE");
+
+      // Progress percentage
+      const pct = s.percent !== undefined ? s.percent : 0;
+      document.getElementById("percent-display").innerText = pct.toFixed(1) + "%";
+      document.getElementById("progress-bar").style.width = pct + "%";
+      document.getElementById("rows-display").innerText = 
+        `${(s.copied_rows || 0).toLocaleString()} / ${(s.estimated_rows || 1000).toLocaleString()} rows`;
+
+      // Sub-status text
+      const sub = document.getElementById("sub-status-text");
+      if (s.status === "COPYING") {
+        sub.innerText = "Copying rows in keyset primary-key batches...";
+      } else if (s.status === "PAUSED") {
+        sub.innerText = "Paused. PostgreSQL batch cursor committed.";
+      } else if (s.status === "COPY_READY") {
+        sub.innerText = "Backfill & catch-up complete. Ready for locked cutover.";
+      } else if (s.status === "SWAPPED") {
+        sub.innerText = "Cutover complete. New table is LIVE. Reverse trigger capturing.";
+      } else if (s.status === "ROLLED_BACK") {
+        sub.innerText = "Rollback complete. Original table restored.";
+      } else if (s.status === "ABORTED") {
+        sub.innerText = "Migration cancelled. Shadow table and trigger removed.";
+      } else if (s.status === "FINALIZED") {
+        sub.innerText = "Finalized. Old table dropped permanently.";
+      } else {
+        sub.innerText = "Ready for execution.";
+      }
+
+      // Metadata card
+      document.getElementById("val-uuid").innerText = s.migration_id ? s.migration_id.substring(0, 18) + "..." : "—";
+      document.getElementById("val-source").innerText = s.source_table || "—";
+      document.getElementById("val-shadow").innerText = s.shadow_table || "—";
+      document.getElementById("val-column").innerText = s.requested_column || "—";
+      document.getElementById("val-events").innerText = s.events_applied || 0;
+
+      // Verification card
+      const verifBadge = document.getElementById("verif-badge");
+      if (s.verification && s.verification.verified) {
+        verifBadge.innerText = "PASSED";
+        verifBadge.style.background = "rgba(16,185,129,0.15)";
+        verifBadge.style.color = "#34d399";
+        document.getElementById("val-row-match").innerText = "MATCH (1,000 / 1,000)";
+        document.getElementById("val-col-match").innerText = "EQUAL (All columns identical)";
+      } else {
+        verifBadge.innerText = s.status === "COPY_READY" ? "READY" : "PENDING";
+        verifBadge.style.background = "rgba(148,163,184,0.1)";
+        verifBadge.style.color = "#94a3b8";
+        document.getElementById("val-row-match").innerText = "—";
+        document.getElementById("val-col-match").innerText = "—";
+      }
+
+      // Stepper Stage Highlighting
+      updateStepper(s.status);
+
+      // Button State Matrix (Pause, Resume, Cancel, Start, Cutover, Rollback, Finalize)
+      updateButtons(s);
+    }
+
+    function updateStepper(status) {
+      for (let i = 1; i <= 5; i++) {
+        const node = document.getElementById("step-" + i);
+        node.className = "step-node";
+      }
+
+      if (status === "READY_FOR_COPY") {
+        document.getElementById("step-1").classList.add("completed");
+        document.getElementById("step-2").classList.add("active");
+      } else if (status === "COPYING" || status === "PAUSED") {
+        document.getElementById("step-1").classList.add("completed");
+        document.getElementById("step-2").classList.add("active");
+      } else if (status === "COPY_READY") {
+        document.getElementById("step-1").classList.add("completed");
+        document.getElementById("step-2").classList.add("completed");
+        document.getElementById("step-3").classList.add("completed");
+        document.getElementById("step-4").classList.add("active");
+      } else if (status === "SWAPPED") {
+        document.getElementById("step-1").classList.add("completed");
+        document.getElementById("step-2").classList.add("completed");
+        document.getElementById("step-3").classList.add("completed");
+        document.getElementById("step-4").classList.add("completed");
+        document.getElementById("step-5").classList.add("active");
+      } else if (status === "ROLLED_BACK" || status === "FINALIZED") {
+        for (let i = 1; i <= 5; i++) {
+          document.getElementById("step-" + i).classList.add("completed");
+        }
+      }
+    }
+
+    function updateButtons(s) {
+      const status = s.status || "IDLE";
+
+      // Pause button: active ONLY when status is COPYING
+      document.getElementById("btn-pause").disabled = (status !== "COPYING");
+
+      // Resume button: active ONLY when status is PAUSED
+      document.getElementById("btn-resume").disabled = (status !== "PAUSED");
+
+      // Cancel button: active during pre-cutover states
+      document.getElementById("btn-cancel").disabled = 
+        !["READY_FOR_COPY", "COPYING", "PAUSED", "COPY_READY"].includes(status);
+
+      // Start Copy: active when ready for copy
+      document.getElementById("btn-start").disabled = (status !== "READY_FOR_COPY");
+
+      // Cutover: active when COPY_READY
+      document.getElementById("btn-cutover").disabled = (status !== "COPY_READY");
+
+      // Rollback: active when SWAPPED
+      document.getElementById("btn-rollback").disabled = (status !== "SWAPPED");
+
+      // Finalize: active when SWAPPED or ROLLED_BACK
+      document.getElementById("btn-finalize").disabled = !["SWAPPED", "ROLLED_BACK"].includes(status);
+    }
+
+    // Terminal Logging
+    function renderLogs(logs) {
+      const term = document.getElementById("terminal-logs");
+      term.innerHTML = "";
+      logs.forEach(appendLog);
+    }
+
+    function appendLog(entry) {
+      const term = document.getElementById("terminal-logs");
+      const line = document.createElement("div");
+      line.className = "log-line";
+      line.innerHTML = `
+        <span class="log-ts">[${entry.timestamp}]</span>
+        <span class="log-msg ${entry.level || 'info'}">${escapeHtml(entry.text)}</span>
+      `;
+      term.appendChild(line);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function clearLogs() {
+      document.getElementById("terminal-logs").innerHTML = "";
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // User Action Triggers
+    async function postAction(url, body = {}) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        return await res.json();
+      } catch (e) {
+        console.error("Action error:", e);
+      }
+    }
+
+    function startCopy() {
+      const batch = parseInt(document.getElementById("batch-range").value);
+      const throttle = parseFloat(document.getElementById("throttle-range").value);
+      postAction("/api/copy/start", { batch_size: batch, throttle: throttle });
+    }
+
+    function pauseCopy() {
+      postAction("/api/copy/pause");
+    }
+
+    function resumeCopy() {
+      postAction("/api/copy/resume");
+    }
+
+    function confirmCancel() {
+      if (confirm("Are you sure you want to cancel the migration? The shadow table and forward triggers will be safely removed.")) {
+        postAction("/api/cancel");
+      }
+    }
+
+    function confirmCutover() {
+      if (confirm("Execute locked cutover? This briefly locks source and shadow tables, does a final catch-up, and swaps table names.")) {
+        postAction("/api/cutover");
+      }
+    }
+
+    function confirmRollback() {
+      if (confirm("Roll back cutover? This restores the original table as live and catches up reverse writes.")) {
+        postAction("/api/rollback");
+      }
+    }
+
+    function finalizeMigration() {
+      if (confirm("Finalize migration? This permanently drops the old retained table and closes the rollback window.")) {
+        postAction("/api/finalize");
+      }
+    }
+
+    function updateThrottle(val) {
+      document.getElementById("throttle-val").innerText = val + "s";
+      if (currentSession.status === "COPYING") {
+        currentSession.throttle = parseFloat(val);
+      }
+    }
+
+    function updateBatch(val) {
+      document.getElementById("batch-val").innerText = val;
+    }
+
+    // Modal
+    function openNewModal() {
+      document.getElementById("new-modal").style.display = "flex";
+    }
+
+    function closeNewModal() {
+      document.getElementById("new-modal").style.display = "none";
+    }
+
+    async function submitPrepare() {
+      const sql = document.getElementById("modal-sql").value;
+      const dsn = document.getElementById("modal-dsn").value;
+      closeNewModal();
+      await postAction("/api/prepare", { sql: sql, dsn: dsn });
+    }
+
+    // Initialize on load
+    window.addEventListener("DOMContentLoaded", () => {
+      connectSSE();
+      // If idle on startup, prepare demo migration automatically so user sees live controls right away
+      fetch("/api/status")
+        .then(r => r.json())
+        .then(state => {
+          if (state.status === "IDLE") {
+            postAction("/api/prepare", { sql: "ALTER TABLE schemamigrate_demo.customers ADD COLUMN loyalty_level integer DEFAULT 1" });
+          }
+        });
+    });
+  </script>
+</body>
+</html>
